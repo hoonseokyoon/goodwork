@@ -11,8 +11,8 @@ type SelectContextValue = {
   onSelect: (value: string, label: string) => void;
   selectedLabel?: string;
   setSelectedLabel: (label: string | undefined) => void;
-  triggerRef: React.RefObject<HTMLButtonElement>;
-  contentRef: React.RefObject<HTMLDivElement>;
+  triggerRef: React.MutableRefObject<HTMLButtonElement | null>;
+  contentRef: React.MutableRefObject<HTMLDivElement | null>;
   disabled: boolean;
 };
 
@@ -283,3 +283,4 @@ export function SelectValue({ placeholder, className }: SelectValueProps) {
     </span>
   );
 }
+

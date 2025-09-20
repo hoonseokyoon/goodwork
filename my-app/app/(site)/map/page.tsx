@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 type MapPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 type InstitutionRow = {
@@ -25,14 +25,16 @@ type InstitutionRow = {
 };
 
 export default async function MapPage({ searchParams }: MapPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+
   const supabase = sb();
   const queryParamRaw =
-    typeof searchParams?.q === "string" ? searchParams.q.trim() : "";
+    typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q.trim() : "";
   const queryParam = queryParamRaw
     .replace(/['"]/g, "")
     .replace(/[%_,]/g, (char) => (char === "," ? " " : `\\${char}`));
   const typeParam =
-    typeof searchParams?.type === "string" ? searchParams.type : "";
+    typeof resolvedSearchParams.type === "string" ? resolvedSearchParams.type : "";
 
   let query = supabase
     .from("institutions")

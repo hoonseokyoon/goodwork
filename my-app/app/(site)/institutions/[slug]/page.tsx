@@ -11,20 +11,30 @@ import { sb } from "@/lib/supabase-server";
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const paramsResult = await params;
+  const slug = paramsResult?.slug;
+
+  const fallbackMetadata = {
+    title: "기관 — 수도원·수녀원",
+  };
+
+  if (!slug) {
+    return fallbackMetadata;
+  }
+
   const client = sb();
   const { data } = await client
     .from("institutions")
     .select("name, description")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!data) {
-    return {
-      title: "기관 — 수도원·수녀원",
-    };
+    return fallbackMetadata;
   }
+
 
   return {
     title: `${data.name} — 수도원·수녀원`,
@@ -69,13 +79,20 @@ type EventRow = {
 export default async function InstitutionPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const paramsResult = await params;
+  const slug = paramsResult?.slug;
+
+  if (!slug) {
+    notFound();
+  }
+
   const client = sb();
   const { data: institution, error } = await client
     .from("institutions")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (error || !institution) {
