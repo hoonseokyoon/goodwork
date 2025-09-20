@@ -1,8 +1,8 @@
-import { updateSession } from "@/lib/supabase/middleware";
-import { type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+export async function middleware() {
+  // 인증 검사를 제거하고 모든 요청을 허용
+  return NextResponse.next();
 }
 
 export const config = {
