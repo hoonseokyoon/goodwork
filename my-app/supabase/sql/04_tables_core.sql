@@ -1,11 +1,12 @@
--- Core domain tables sourced from the planning document
+-- Core domain tables derived from the planning document and runtime usage
 -- 1) Institutions
 create table if not exists public.institutions (
   id uuid primary key default gen_random_uuid(),
   origin_notion_id text unique,
   slug text unique,
   name text not null,
-  kind institution_kind default 'other',
+  type institution_kind default 'other',
+  summary text,
   religious_order text,
   website_url text,
   sns jsonb,
@@ -18,6 +19,7 @@ create table if not exists public.institutions (
   volunteer_contact text,
   description text,
   status status_type default 'active',
+  tags text[] default '{}'::text[],
   source_urls jsonb,
   last_crawled_at timestamptz,
   confidence int default 70,
@@ -27,8 +29,45 @@ create table if not exists public.institutions (
   constraint chk_lng check (lng is null or (lng between -180 and 180))
 );
 
+-- Legacy compatibility: older revisions used a `kind` column instead of `type`
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'institutions'
+      and column_name = 'kind'
+  )
+  and not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'institutions'
+      and column_name = 'type'
+  ) then
+    execute 'alter table public.institutions rename column kind to type';
+  end if;
+end
+$$;
+
+alter table public.institutions add column if not exists summary text;
+alter table public.institutions add column if not exists tags text[] default '{}'::text[];
+alter table public.institutions alter column type set default 'other';
+alter table public.institutions alter column tags set default '{}'::text[];
+
+update public.institutions
+set type = coalesce(type, 'other')
+where type is null;
+
+update public.institutions
+set tags = '{}'::text[]
+where tags is null;
+
 create index if not exists institutions_name_trgm on public.institutions using gin (name gin_trgm_ops);
 create index if not exists institutions_lat_lng on public.institutions (lat, lng);
+create index if not exists institutions_type_idx on public.institutions (type);
+create index if not exists institutions_tags_gin on public.institutions using gin (tags);
 
 create trigger trg_institutions_updated_at
 before update on public.institutions
